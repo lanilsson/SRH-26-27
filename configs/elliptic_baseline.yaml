@@ -1,0 +1,19 @@
+# Condition 1 (control): Elliptic / baseline GCN — neither mechanism.
+# Hyperparameters are starting points: tune on train+validation only,
+# then freeze this file (commit it) before any test-set evaluation.
+
+dataset: elliptic
+condition: baseline
+
+model:
+  ego_separation: false   # keep ego and neighbor representations separate before combining
+  second_order: false     # explicitly aggregate the 2-hop neighborhood as its own channel
+  hidden_dim: 64
+  num_layers: 2
+  dropout: 0.5
+
+training:
+  lr: 0.01
+  weight_decay: 0.0005
+  epochs: 200
+  patience: 30            # early stopping on validation PR-AUC

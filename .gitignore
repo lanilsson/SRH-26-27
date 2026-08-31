@@ -1,1 +1,15 @@
+# macOS
 .DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# Regenerable artifacts (rebuilt from data/raw and configs)
+data/processed/*
+!data/processed/.gitkeep
+checkpoints/*
+!checkpoints/.gitkeep

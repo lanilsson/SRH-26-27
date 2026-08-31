@@ -1,0 +1,19 @@
+# Condition 3: IEEE-CIS-G / explicit second-order neighborhood aggregation only.
+# Hyperparameters are starting points: tune on train+validation only,
+# then freeze this file (commit it) before any test-set evaluation.
+
+dataset: ieee_cis_g
+condition: second_order
+
+model:
+  ego_separation: false
+  second_order: true
+  hidden_dim: 64
+  num_layers: 2
+  dropout: 0.5
+
+training:
+  lr: 0.01
+  weight_decay: 0.0005
+  epochs: 200
+  patience: 30

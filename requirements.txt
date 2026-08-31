@@ -1,0 +1,11 @@
+# Exact pinned versions, as promised in the proposal (System Environment).
+# On the RunPod machine, install torch first with the CUDA build matching
+# the pod's driver (see https://pytorch.org/get-started/locally/), then:
+#   pip install -r requirements.txt
+torch==2.7.1
+torch-geometric==2.6.1
+scikit-learn==1.6.1
+numpy==2.2.2
+pandas==2.2.3
+PyYAML==6.0.2
+tqdm==4.67.1
