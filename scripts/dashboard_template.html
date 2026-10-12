@@ -1,0 +1,582 @@
+<!doctype html>
+<!--
+  Template for the results dashboard. scripts/dashboard.py replaces the
+  DATA placeholder below with the run records and writes results/dashboard.html.
+  Self-contained on purpose: no external scripts, fonts or network requests.
+
+  AI-generated (Claude Code (Opus 5.5), 2026-10-12) — log the prompt and cite
+  per the ISEF generative-AI table.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study dashboard — heterophily-aware GNN fraud detection</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7; --surface: #fcfcfb;
+    --ink: #0b0b0b; --ink2: #52514e; --muted: #898781;
+    --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100;
+    --good: #0ca30c; --warn: #fab219; --warn-wash: rgba(250,178,25,0.16);
+    --select: rgba(42,120,214,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #0d0d0d; --surface: #1a1a19;
+      --ink: #ffffff; --ink2: #c3c2b7; --muted: #898781;
+      --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+      --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500;
+      --select: rgba(57,135,229,0.18);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 20px; margin: 0 0 2px; }
+  h2 { font-size: 16px; margin: 36px 0 4px; }
+  h3 { font-size: 14px; margin: 0 0 8px; }
+  p.hint { color: var(--ink2); margin: 0 0 12px; max-width: 76ch; }
+  .sub { color: var(--ink2); margin: 0; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 14px; min-width: 0; }
+  .cols { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); }
+
+  .controls {
+    position: sticky; top: 0; z-index: 5; background: var(--page);
+    display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center;
+    padding: 10px 0; margin-top: 14px; border-bottom: 1px solid var(--border);
+  }
+  .controls .group { display: flex; align-items: center; gap: 8px; }
+  .controls .label { color: var(--ink2); }
+  .controls .note { color: var(--ink2); flex: 1 1 260px; }
+  .seg { display: inline-flex; border: 1px solid var(--axis); border-radius: 6px; overflow: hidden; }
+  .seg button {
+    font: inherit; color: var(--ink2); background: var(--surface); border: 0;
+    padding: 5px 11px; cursor: pointer;
+  }
+  .seg button + button { border-left: 1px solid var(--axis); }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+  button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--c1); outline-offset: 1px; }
+
+  .kpis { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-top: 16px; }
+  .kpi .k { color: var(--ink2); }
+  .kpi .v { font-size: 26px; font-weight: 600; line-height: 1.2; }
+  .kpi .d { color: var(--ink2); font-size: 12px; }
+
+  .alerts { margin: 16px 0 0; padding: 12px 14px; list-style: none; border-left: 3px solid var(--warn); background: var(--warn-wash); border-radius: 0 8px 8px 0; }
+  .alerts li + li { margin-top: 6px; }
+
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+  th { color: var(--ink2); font-weight: 500; font-size: 12px; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .scroll { overflow-x: auto; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover td { background: var(--select); }
+  tr.selected td { background: var(--select); }
+
+  .rungrid th, .rungrid td { border: 0; padding: 3px; }
+  .rungrid td:first-child { padding-right: 10px; }
+  .cell {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 100%; min-width: 62px; height: 44px; border-radius: 6px;
+    border: 1px solid var(--border); background: transparent; color: var(--ink);
+    font: inherit; font-size: 12px; font-variant-numeric: tabular-nums; line-height: 1.25;
+  }
+  button.cell { cursor: pointer; }
+  button.cell:hover { border-color: var(--ink2); }
+  .cell.flagged { background: var(--warn-wash); }
+  .cell.missing { color: var(--muted); border-style: dashed; }
+  .cell.selected { border: 2px solid var(--c1); }
+  .cell .st { font-size: 11px; color: var(--ink2); }
+  .ico-good { color: var(--good); font-weight: 700; }
+  .ico-warn { color: var(--warn); font-weight: 700; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 10px; color: var(--ink2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .sw { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+  .key { width: 14px; height: 0; border-top: 2px solid; display: inline-block; flex: none; }
+
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--muted); }
+  svg text.cat { font-size: 12px; fill: var(--ink2); }
+  svg text.val { fill: var(--ink2); font-variant-numeric: tabular-nums; }
+  .empty { color: var(--muted); padding: 28px 8px; text-align: center; border: 1px dashed var(--axis); border-radius: 6px; }
+
+  #tip {
+    position: fixed; z-index: 20; pointer-events: none; display: none; max-width: 300px;
+    background: var(--surface); color: var(--ink); border: 1px solid var(--axis);
+    border-radius: 6px; padding: 7px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.14);
+  }
+  #tip .t { color: var(--ink2); margin-bottom: 3px; }
+  #tip .r { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+  #tip .r b { font-variant-numeric: tabular-nums; }
+  #tip .r span.n { color: var(--ink2); }
+
+  dl { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; margin: 0; }
+  dt { color: var(--ink2); }
+  dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  pre { margin: 0; font: 12px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+  ul.flags { margin: 0 0 12px; padding-left: 18px; }
+  footer { margin-top: 40px; color: var(--ink2); font-size: 12px; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Study dashboard</h1>
+  <p class="sub">Heterophily-aware GNN architecture and fraud detection — read-only view of the run records</p>
+
+  <div id="alerts"></div>
+  <div class="kpis" id="kpis"></div>
+
+  <div class="controls">
+    <div class="group"><span class="label">Split</span><span class="seg" id="seg-split"></span></div>
+    <div class="group"><span class="label">Metric</span><span class="seg" id="seg-metric"></span></div>
+    <span class="note" id="split-note"></span>
+  </div>
+
+  <h2>Runs</h2>
+  <p class="hint">Every planned run (each config × each seed). Select a run to see its record and any provenance flags.</p>
+  <div class="cols" id="grid"></div>
+  <div id="detail"></div>
+
+  <h2>Results by condition</h2>
+  <p class="hint" id="results-hint"></p>
+  <div class="legend" id="legend"></div>
+  <div class="cols" id="strips"></div>
+
+  <h2>2 × 2 design view</h2>
+  <p class="hint">The same condition means, arranged by the two independent variables. Whiskers are ± SEM.</p>
+  <div class="cols" id="factorial"></div>
+
+  <h2>Summary table</h2>
+  <div class="card scroll" id="summary"></div>
+
+  <h2>Training curves</h2>
+  <p class="hint">One line per run, coloured by condition. Hover for the mean across the seeds still training at that epoch. Validation PR-AUC is what early stopping watches.</p>
+  <div class="cols" id="curves"></div>
+
+  <h2>All runs</h2>
+  <div class="card scroll" id="runs"></div>
+
+  <footer id="footer"></footer>
+</main>
+<div id="tip" role="status"></div>
+
+<script>
+const D = /*__DATA__*/null;
+
+const METRIC_LABEL = { pr_auc: "PR-AUC", f1: "Fraud-class F1", roc_auc: "ROC-AUC" };
+const SPLIT_LABEL = { val: "Validation", test: "Test" };
+const COND_LABEL = { baseline: "Baseline", ego: "Ego separation", second_order: "Second-order", combined: "Combined" };
+const COND_SHORT = { baseline: "Base", ego: "Ego", second_order: "2nd-ord", combined: "Both" };
+const DATASET_LABEL = { elliptic: "Elliptic", ieee_cis_g: "IEEE-CIS-G" };
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+// Validation first: test metrics stay out of sight until asked for.
+const state = { split: "val", metric: "pr_auc", selected: null };
+
+const label = (map, key) => map[key] || key;
+const color = cond => { const i = D.conditions.indexOf(cond); return i >= 0 && i < 4 ? `var(--c${i + 1})` : "var(--muted)"; };
+const fmt = (v, d = 4) => (v == null || Number.isNaN(v)) ? "–" : v.toFixed(d);
+const meanSem = g => g ? (g.sem == null ? fmt(g.mean) : `${fmt(g.mean)} ± ${fmt(g.sem)}`) : "–";
+const mean = xs => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null;
+const summaryOf = (ds, cond) => (D.summary[state.split][ds] || {})[cond];
+const runAt = (ds, cond, seed) => D.runs.find(r => r.dataset === ds && r.condition === cond && r.seed === seed);
+
+function make(ns, tag, attrs, kids) {
+  const e = ns ? document.createElementNS(ns, tag) : document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null) continue;
+    if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const kid of kids.flat(Infinity)) {
+    if (kid == null || kid === false) continue;
+    e.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+  }
+  return e;
+}
+const h = (tag, attrs, ...kids) => make(null, tag, attrs, kids);
+const s = (tag, attrs, ...kids) => make(SVG_NS, tag, attrs, kids);
+const empty = text => h("div", { class: "empty" }, text);
+
+/* ---------- tooltip ---------- */
+const tipEl = document.getElementById("tip");
+function showTip(x, y, content) {
+  tipEl.replaceChildren(...content);
+  tipEl.style.display = "block";
+  const r = tipEl.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + r.width > innerWidth - 8) left = x - r.width - 14;
+  if (top + r.height > innerHeight - 8) top = y - r.height - 14;
+  tipEl.style.left = Math.max(8, left) + "px";
+  tipEl.style.top = Math.max(8, top) + "px";
+}
+const hideTip = () => { tipEl.style.display = "none"; };
+function attachTip(el, build) {
+  el.addEventListener("pointermove", e => showTip(e.clientX, e.clientY, build()));
+  el.addEventListener("pointerleave", hideTip);
+  el.addEventListener("focus", () => { const r = el.getBoundingClientRect(); showTip(r.right, r.top, build()); });
+  el.addEventListener("blur", hideTip);
+}
+const tipTitle = text => h("div", { class: "t" }, text);
+const tipRow = (cond, value, name, extra) => h("div", { class: "r" },
+  cond ? h("span", { class: "key", style: `border-color:${color(cond)}` }) : null,
+  h("b", {}, value), h("span", { class: "n" }, name), extra ? h("span", { class: "n" }, extra) : null);
+
+/* ---------- scales ---------- */
+function niceScale(lo, hi, count) {
+  if (lo === hi) { lo -= 0.5; hi += 0.5; }
+  const raw = (hi - lo) / count, mag = 10 ** Math.floor(Math.log10(raw)), norm = raw / mag;
+  const step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
+  const start = Math.floor(lo / step + 1e-9) * step, end = Math.ceil(hi / step - 1e-9) * step;
+  const ticks = [];
+  for (let v = start; v <= end + step / 2; v += step) ticks.push(+v.toFixed(10));
+  const decimals = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+  return { lo: start, hi: end, ticks, decimals };
+}
+
+function frame(box, height, margin) {
+  const W = Math.max(280, Math.floor(box.clientWidth)), H = height;
+  const svg = s("svg", { viewBox: `0 0 ${W} ${H}`, width: W, height: H, role: "img" });
+  return { svg, W, H, pw: W - margin.l - margin.r, ph: H - margin.t - margin.b };
+}
+
+function yAxis(svg, scale, y, m, W) {
+  for (const t of scale.ticks) {
+    svg.append(s("line", { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: "var(--grid)", "stroke-width": 1 }));
+    svg.append(s("text", { x: m.l - 6, y: y(t) + 4, "text-anchor": "end" }, t.toFixed(scale.decimals)));
+  }
+}
+
+/* ---------- header pieces ---------- */
+function renderAlerts() {
+  const box = document.getElementById("alerts");
+  box.replaceChildren();
+  if (!D.study_flags.length) return;
+  box.append(h("ul", { class: "alerts" }, D.study_flags.map(f =>
+    h("li", {}, h("span", { class: "ico-warn" }, "⚠ "), f))));
+}
+
+function renderKpis() {
+  const planned = new Set(D.planned.map(p => p.join("|")));
+  const done = D.runs.filter(r => planned.has([r.dataset, r.condition, r.seed].join("|"))).length;
+  const flagged = D.runs.filter(r => r.flags.length).length;
+  const commits = new Set(D.runs.map(r => r.git_commit));
+  const seconds = D.runs.reduce((a, r) => a + (r.resources.total_seconds || 0), 0);
+  const time = seconds >= 3600 ? `${(seconds / 3600).toFixed(1)} h` : seconds >= 60 ? `${(seconds / 60).toFixed(1)} min` : `${seconds.toFixed(0)} s`;
+  const last = D.runs.map(r => r.timestamp).filter(Boolean).sort().pop();
+  const tiles = [
+    ["Runs complete", `${done} / ${D.planned.length}`, `${D.planned.length - done} still to run`],
+    ["Runs flagged", String(flagged), flagged ? "see the run grid for which" : D.runs.length ? "no provenance problems found" : "nothing to check yet"],
+    ["Git commits used", String(D.runs.length ? commits.size : 0), "one commit means all runs share the same code"],
+    ["Compute time", time, last ? `last run finished ${new Date(last).toLocaleString()}` : "no runs yet"],
+  ];
+  document.getElementById("kpis").replaceChildren(...tiles.map(([k, v, d]) =>
+    h("div", { class: "card kpi" }, h("div", { class: "k" }, k), h("div", { class: "v" }, v), h("div", { class: "d" }, d))));
+}
+
+function renderControls() {
+  const seg = (id, options, key) => document.getElementById(id).replaceChildren(...options.map(([value, text]) =>
+    h("button", { type: "button", "aria-pressed": String(state[key] === value),
+      onclick: () => { state[key] = value; renderAll(); } }, text)));
+  seg("seg-split", Object.entries(SPLIT_LABEL), "split");
+  seg("seg-metric", D.metrics.map(m => [m, label(METRIC_LABEL, m)]), "metric");
+  document.getElementById("split-note").textContent = state.split === "val"
+    ? "Showing validation metrics. Test metrics stay hidden until you switch — leave this on Validation until the configs are frozen."
+    : "Showing test metrics. These should only inform decisions after the configs are frozen.";
+  document.getElementById("results-hint").textContent =
+    `${SPLIT_LABEL[state.split]} ${label(METRIC_LABEL, state.metric)}. Each dot is one seed; the bar is the mean and the whisker is ± SEM. The vertical axis starts near the lowest value, not at zero, and each dataset has its own scale.`;
+}
+
+function renderLegend() {
+  document.getElementById("legend").replaceChildren(...D.conditions.map(c =>
+    h("span", {}, h("span", { class: "sw", style: `background:${color(c)}` }), label(COND_LABEL, c))));
+}
+
+/* ---------- run grid + detail ---------- */
+function select(runName) {
+  state.selected = state.selected === runName ? null : runName;
+  renderGrid(); renderDetail(); renderRuns();
+  if (state.selected) document.getElementById("detail").scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function renderGrid() {
+  const box = document.getElementById("grid");
+  box.replaceChildren();
+  if (!D.datasets.length) { box.append(empty("No configs and no runs found.")); return; }
+  for (const ds of D.datasets) {
+    const rows = D.conditions.map(cond => h("tr", {},
+      h("td", {}, h("span", { class: "sw", style: `background:${color(cond)}` }), " ", label(COND_LABEL, cond)),
+      D.seeds.map(seed => {
+        const run = runAt(ds, cond, seed);
+        if (!run) return h("td", {}, h("div", { class: "cell missing", title: "Not run yet" }, "–", h("span", { class: "st" }, "to run")));
+        const flagged = run.flags.length > 0;
+        return h("td", {}, h("button", {
+          type: "button", onclick: () => select(run.run),
+          class: `cell${flagged ? " flagged" : ""}${state.selected === run.run ? " selected" : ""}`,
+          "aria-label": `${run.run}: ${flagged ? "flagged" : "done"}`,
+        }, fmt(run[state.split][state.metric]),
+          h("span", { class: "st" }, h("span", { class: flagged ? "ico-warn" : "ico-good" }, flagged ? "⚠ " : "✓ "), flagged ? "flagged" : "done")));
+      })));
+    box.append(h("div", { class: "card scroll" }, h("h3", {}, label(DATASET_LABEL, ds)),
+      h("table", { class: "rungrid" },
+        h("thead", {}, h("tr", {}, h("th", {}, "Condition"), D.seeds.map(sd => h("th", {}, `seed ${sd}`)))),
+        h("tbody", {}, rows))));
+  }
+}
+
+function renderDetail() {
+  const box = document.getElementById("detail");
+  box.replaceChildren();
+  const run = D.runs.find(r => r.run === state.selected);
+  if (!run) return;
+  const metrics = split => D.metrics.map(m => `${label(METRIC_LABEL, m)} ${fmt(run[split][m])}`).join("  ·  ")
+    + `  ·  threshold ${fmt(run[split].threshold)}`;
+  const res = run.resources;
+  const rows = [
+    ["Validation", metrics("val")],
+    ["Test", state.split === "test" ? metrics("test") : "hidden — switch Split to Test"],
+    // best_epoch is stored 0-based; shown 1-based to match the training-curve axis.
+    ["Best epoch", run.best_epoch == null ? "–" : `${run.best_epoch + 1} of ${run.epochs_run} run`],
+    ["Parameters", run.num_params == null ? "–" : run.num_params.toLocaleString()],
+    ["Class weight", fmt(run.pos_weight, 3)],
+    ["Device", res.device || "–"],
+    ["Time", `${fmt(res.total_seconds, 1)} s total  ·  ${fmt(res.seconds_per_epoch, 4)} s per epoch`],
+    ["Peak memory", `${fmt(res.peak_memory_mb, 0)} MB`],
+    ["torch", res.torch || "–"],
+    ["Git commit", `${run.git_commit || "–"}${run.git_dirty ? "  (uncommitted changes)" : run.git_dirty === false ? "  (clean)" : ""}`],
+    ["Finished", run.timestamp ? new Date(run.timestamp).toLocaleString() : "–"],
+    ["File", `${D.runs_dir}/${run.file}`],
+  ];
+  box.append(h("div", { class: "card", style: "margin-top:12px" },
+    h("h3", {}, run.run),
+    run.flags.length ? h("ul", { class: "flags" }, run.flags.map(f => h("li", {}, h("span", { class: "ico-warn" }, "⚠ "), f))) : null,
+    run.notes.length ? h("ul", { class: "flags", style: "color:var(--ink2)" }, run.notes.map(n => h("li", {}, n))) : null,
+    h("div", { class: "cols" },
+      h("dl", {}, rows.map(([k, v]) => [h("dt", {}, k), h("dd", {}, v)])),
+      h("div", {}, h("div", { style: "color:var(--ink2);margin-bottom:4px" }, "Config used"), h("pre", {}, JSON.stringify(run.config, null, 2))))));
+}
+
+/* ---------- results: seed dots + mean ± SEM ---------- */
+function stripChart(box, ds) {
+  const runs = D.runs.filter(r => r.dataset === ds);
+  if (!runs.length) { box.append(empty("No runs yet for this dataset.")); return; }
+  const m = { l: 46, r: 10, t: 12, b: 46 };
+  const { svg, W, H, pw, ph } = frame(box, 260, m);
+  const values = runs.map(r => r[state.split][state.metric]);
+  for (const cond of D.conditions) {
+    const g = (summaryOf(ds, cond) || {})[state.metric];
+    if (g && g.sem != null) values.push(g.mean - g.sem, g.mean + g.sem);
+  }
+  const lo = Math.min(...values), hi = Math.max(...values), pad = (hi - lo) * 0.12 || 0.01;
+  const scale = niceScale(lo - pad, hi + pad, 4);
+  const y = v => m.t + ph * (1 - (v - scale.lo) / (scale.hi - scale.lo));
+  const band = pw / D.conditions.length, narrow = band < 96;
+  yAxis(svg, scale, y, m, W);
+  svg.append(s("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "var(--axis)", "stroke-width": 1 }));
+
+  D.conditions.forEach((cond, i) => {
+    const cx = m.l + band * (i + 0.5);
+    const cell = summaryOf(ds, cond), g = cell && cell[state.metric];
+    svg.append(s("text", { class: "cat", x: cx, y: H - m.b + 17, "text-anchor": "middle" }, narrow ? label(COND_SHORT, cond) : label(COND_LABEL, cond)));
+    svg.append(s("text", { class: "val", x: cx, y: H - m.b + 33, "text-anchor": "middle" }, g ? (narrow ? fmt(g.mean, 3) : meanSem(g)) : "no runs"));
+    if (!g) return;
+    if (g.sem != null) svg.append(s("line", { x1: cx, x2: cx, y1: y(g.mean - g.sem), y2: y(g.mean + g.sem), stroke: "var(--ink)", "stroke-width": 1.5 }));
+    svg.append(s("line", { x1: cx - 18, x2: cx + 18, y1: y(g.mean), y2: y(g.mean), stroke: "var(--ink)", "stroke-width": 2, "stroke-linecap": "round" }));
+    const group = runs.filter(r => r.condition === cond).sort((a, b) => a.seed - b.seed);
+    group.forEach((run, j) => {
+      const x = cx + (j - (group.length - 1) / 2) * Math.min(9, band / 8), v = run[state.split][state.metric];
+      svg.append(s("circle", { cx: x, cy: y(v), r: 4.5, fill: color(cond), stroke: "var(--surface)", "stroke-width": 2 }));
+      const hit = s("circle", { cx: x, cy: y(v), r: 12, fill: "transparent", tabindex: 0, style: "cursor:pointer",
+        "aria-label": `${run.run}: ${fmt(v)}`, onclick: () => select(run.run) });
+      attachTip(hit, () => [tipTitle(`${label(DATASET_LABEL, ds)} · ${SPLIT_LABEL[state.split]} ${label(METRIC_LABEL, state.metric)}`),
+        tipRow(cond, fmt(v), `${label(COND_LABEL, cond)}, seed ${run.seed}`),
+        tipRow(null, meanSem(g), `mean ± SEM, n = ${cell.n}`)]);
+      svg.append(hit);
+    });
+  });
+  box.append(svg);
+}
+
+/* ---------- 2 x 2 design view ---------- */
+function factorialChart(box, ds) {
+  const pts = D.conditions.map(cond => ({ cond, cell: summaryOf(ds, cond) })).filter(p => p.cell)
+    .map(p => ({ ...p, g: p.cell[state.metric] }));
+  if (!pts.length) { box.append(empty("No runs yet for this dataset.")); return; }
+  const m = { l: 46, r: 118, t: 12, b: 34 };
+  const { svg, W, H, pw, ph } = frame(box, 240, m);
+  const values = pts.flatMap(p => [p.g.mean - (p.g.sem || 0), p.g.mean + (p.g.sem || 0)]);
+  const lo = Math.min(...values), hi = Math.max(...values), pad = (hi - lo) * 0.15 || 0.01;
+  const scale = niceScale(lo - pad, hi + pad, 4);
+  const y = v => m.t + ph * (1 - (v - scale.lo) / (scale.hi - scale.lo));
+  const xs = [m.l + pw * 0.2, m.l + pw * 0.8];
+  yAxis(svg, scale, y, m, W);
+  svg.append(s("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "var(--axis)", "stroke-width": 1 }));
+  ["Second-order off", "Second-order on"].forEach((text, i) =>
+    svg.append(s("text", { class: "cat", x: xs[i], y: H - m.b + 18, "text-anchor": "middle" }, text)));
+
+  // Each line holds ego separation fixed and switches second-order aggregation on.
+  const lines = [["Ego separation off", "baseline", "second_order"], ["Ego separation on", "ego", "combined"]];
+  const ends = [];
+  for (const [text, from, to] of lines) {
+    const a = pts.find(p => p.cond === from), b = pts.find(p => p.cond === to);
+    if (a && b) svg.append(s("line", { x1: xs[0], y1: y(a.g.mean), x2: xs[1], y2: y(b.g.mean), stroke: "var(--ink2)", "stroke-width": 2, "stroke-linecap": "round" }));
+    if (b) ends.push({ text, y: y(b.g.mean) });
+  }
+  if (ends.length === 2 && Math.abs(ends[0].y - ends[1].y) < 14) {
+    const mid = (ends[0].y + ends[1].y) / 2, up = ends[0].y <= ends[1].y ? 0 : 1;
+    ends[up].y = mid - 7; ends[1 - up].y = mid + 7;
+  }
+  for (const e of ends) svg.append(s("text", { class: "cat", x: xs[1] + 12, y: e.y + 4 }, e.text));
+
+  for (const p of pts) {
+    const col = ["baseline", "ego"].includes(p.cond) ? 0 : ["second_order", "combined"].includes(p.cond) ? 1 : null;
+    if (col == null) continue;
+    const cx = xs[col], cy = y(p.g.mean);
+    if (p.g.sem != null) svg.append(s("line", { x1: cx, x2: cx, y1: y(p.g.mean - p.g.sem), y2: y(p.g.mean + p.g.sem), stroke: "var(--ink)", "stroke-width": 1.5 }));
+    svg.append(s("circle", { cx, cy, r: 5.5, fill: color(p.cond), stroke: "var(--surface)", "stroke-width": 2 }));
+    const hit = s("circle", { cx, cy, r: 13, fill: "transparent", tabindex: 0, "aria-label": `${p.cond}: ${meanSem(p.g)}` });
+    attachTip(hit, () => [tipTitle(`${label(DATASET_LABEL, ds)} · ${SPLIT_LABEL[state.split]} ${label(METRIC_LABEL, state.metric)}`),
+      tipRow(p.cond, meanSem(p.g), `${label(COND_LABEL, p.cond)}, n = ${p.cell.n}`)]);
+    svg.append(hit);
+  }
+  box.append(svg);
+}
+
+/* ---------- training curves ---------- */
+function curveChart(box, ds, key, decimalsForTip) {
+  const runs = D.runs.filter(r => r.dataset === ds && r.history && (r.history[key] || []).length);
+  if (!runs.length) { box.append(empty("No per-epoch history in these run records yet (src/train.py records it from 2026-10-12).")); return; }
+  const m = { l: 46, r: 12, t: 12, b: 34 };
+  const { svg, W, H, pw, ph } = frame(box, 230, m);
+  const maxE = Math.max(...runs.map(r => r.history[key].length));
+  const all = runs.flatMap(r => r.history[key]);
+  const scale = niceScale(Math.min(...all), Math.max(...all), 4);
+  const y = v => m.t + ph * (1 - (v - scale.lo) / (scale.hi - scale.lo));
+  const x = e => m.l + (maxE > 1 ? (e - 1) / (maxE - 1) : 0.5) * pw;
+  yAxis(svg, scale, y, m, W);
+  svg.append(s("line", { x1: m.l, x2: W - m.r, y1: H - m.b, y2: H - m.b, stroke: "var(--axis)", "stroke-width": 1 }));
+  for (const t of niceScale(0, maxE, 5).ticks.filter(t => t >= 1 && t <= maxE && Number.isInteger(t)))
+    svg.append(s("text", { x: x(t), y: H - m.b + 15, "text-anchor": "middle" }, t));
+  svg.append(s("text", { x: W - m.r, y: H - 4, "text-anchor": "end" }, "epoch"));
+
+  for (const run of runs) {
+    const d = run.history[key].map((v, i) => `${i ? "L" : "M"}${x(i + 1).toFixed(1)},${y(v).toFixed(1)}`).join("");
+    svg.append(s("path", { d, fill: "none", stroke: color(run.condition), "stroke-width": 1.5, "stroke-linejoin": "round", "stroke-linecap": "round", opacity: 0.75 }));
+  }
+  const cross = s("line", { y1: m.t, y2: H - m.b, stroke: "var(--ink2)", "stroke-width": 1, visibility: "hidden" });
+  const overlay = s("rect", { x: m.l, y: m.t, width: pw, height: ph, fill: "transparent" });
+  overlay.addEventListener("pointermove", ev => {
+    const box = svg.getBoundingClientRect(), px = (ev.clientX - box.left) * (W / box.width);
+    const e = Math.min(maxE, Math.max(1, Math.round((px - m.l) / pw * (maxE - 1)) + 1));
+    cross.setAttribute("x1", x(e)); cross.setAttribute("x2", x(e)); cross.setAttribute("visibility", "visible");
+    const rows = D.conditions.map(cond => {
+      const vs = runs.filter(r => r.condition === cond && r.history[key].length >= e).map(r => r.history[key][e - 1]);
+      return vs.length ? tipRow(cond, fmt(mean(vs), decimalsForTip), label(COND_LABEL, cond), `(${vs.length} seed${vs.length > 1 ? "s" : ""})`) : null;
+    });
+    showTip(ev.clientX, ev.clientY, [tipTitle(`Epoch ${e} · mean across seeds`), ...rows]);
+  });
+  overlay.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); hideTip(); });
+  svg.append(cross, overlay);
+  box.append(svg);
+}
+
+function renderCharts() {
+  const fill = (id, titleFor) => {
+    const host = document.getElementById(id);
+    host.replaceChildren();
+    // Lay out every card first: a chart measures its box, and the box only
+    // has its final width once all its siblings are in the grid.
+    const pending = [];
+    for (const ds of D.datasets) {
+      for (const [title, fn] of titleFor(ds)) {
+        const plot = h("div", {});
+        host.append(h("div", { class: "card" }, h("h3", {}, title), plot));
+        pending.push(() => fn(plot));
+      }
+    }
+    pending.forEach(draw => draw());
+    if (!D.datasets.length) host.append(empty("Nothing to show yet."));
+  };
+  const name = `${SPLIT_LABEL[state.split]} ${label(METRIC_LABEL, state.metric)}`;
+  fill("strips", ds => [[`${label(DATASET_LABEL, ds)} — ${name}`, box => stripChart(box, ds)]]);
+  fill("factorial", ds => [[`${label(DATASET_LABEL, ds)} — ${name}`, box => factorialChart(box, ds)]]);
+  fill("curves", ds => [
+    [`${label(DATASET_LABEL, ds)} — training loss`, box => curveChart(box, ds, "train_loss", 4)],
+    [`${label(DATASET_LABEL, ds)} — validation PR-AUC`, box => curveChart(box, ds, "val_pr_auc", 4)],
+  ]);
+}
+
+/* ---------- tables ---------- */
+function renderSummary() {
+  const box = document.getElementById("summary");
+  if (!D.runs.length) { box.replaceChildren(empty("No runs yet.")); return; }
+  const rows = [];
+  for (const ds of D.datasets) for (const cond of D.conditions) {
+    const cell = summaryOf(ds, cond);
+    if (!cell) continue;
+    const group = D.runs.filter(r => r.dataset === ds && r.condition === cond);
+    rows.push(h("tr", {},
+      h("td", {}, label(DATASET_LABEL, ds)),
+      h("td", {}, h("span", { class: "sw", style: `background:${color(cond)}` }), " ", label(COND_LABEL, cond)),
+      h("td", { class: "num" }, `${cell.n} / ${D.seeds.length}`),
+      D.metrics.map(mt => h("td", { class: "num" }, meanSem(cell[mt]))),
+      h("td", { class: "num" }, fmt(mean(group.map(r => r.best_epoch + 1)), 1)),
+      h("td", { class: "num" }, fmt(mean(group.map(r => r.resources.seconds_per_epoch).filter(v => v != null)), 4)),
+      h("td", { class: "num" }, fmt(mean(group.map(r => r.resources.peak_memory_mb).filter(v => v != null)), 0)),
+      h("td", { class: "num" }, group[0].num_params == null ? "–" : group[0].num_params.toLocaleString())));
+  }
+  box.replaceChildren(h("table", {},
+    h("thead", {}, h("tr", {}, h("th", {}, "Dataset"), h("th", {}, "Condition"), h("th", { class: "num" }, "Seeds"),
+      D.metrics.map(mt => h("th", { class: "num" }, `${SPLIT_LABEL[state.split]} ${label(METRIC_LABEL, mt)} (mean ± SEM)`)),
+      h("th", { class: "num" }, "Best epoch (mean)"), h("th", { class: "num" }, "s / epoch"), h("th", { class: "num" }, "Peak MB"), h("th", { class: "num" }, "Parameters"))),
+    h("tbody", {}, rows)));
+}
+
+function renderRuns() {
+  const box = document.getElementById("runs");
+  if (!D.runs.length) { box.replaceChildren(empty(`No run records in ${D.runs_dir}/ yet.`)); return; }
+  const rows = D.runs.map(run => h("tr", { class: `clickable${state.selected === run.run ? " selected" : ""}`, onclick: () => select(run.run) },
+    h("td", {}, run.run),
+    h("td", {}, run.flags.length
+      ? [h("span", { class: "ico-warn" }, "⚠ "), `${run.flags.length} flag${run.flags.length > 1 ? "s" : ""}`]
+      : [h("span", { class: "ico-good" }, "✓ "), "done"]),
+    D.metrics.map(mt => h("td", { class: "num" }, fmt(run[state.split][mt]))),
+    h("td", { class: "num" }, run.best_epoch == null ? "–" : run.best_epoch + 1),
+    h("td", { class: "num" }, run.epochs_run ?? "–"),
+    h("td", { class: "num" }, fmt(run.resources.total_seconds, 1)),
+    h("td", { class: "num" }, fmt(run.resources.peak_memory_mb, 0)),
+    h("td", {}, (run.git_commit || "–").slice(0, 7) + (run.git_dirty ? " +changes" : "")),
+    h("td", {}, run.timestamp ? new Date(run.timestamp).toLocaleString() : "–")));
+  box.replaceChildren(h("table", {},
+    h("thead", {}, h("tr", {}, h("th", {}, "Run"), h("th", {}, "Status"),
+      D.metrics.map(mt => h("th", { class: "num" }, `${SPLIT_LABEL[state.split]} ${label(METRIC_LABEL, mt)}`)),
+      h("th", { class: "num" }, "Best epoch"), h("th", { class: "num" }, "Epochs run"), h("th", { class: "num" }, "Time (s)"),
+      h("th", { class: "num" }, "Peak MB"), h("th", {}, "Commit"), h("th", {}, "Finished"))),
+    h("tbody", {}, rows)));
+}
+
+function renderFooter() {
+  document.getElementById("footer").textContent =
+    `Generated ${new Date(D.generated).toLocaleString()} from ${D.runs_dir}/ · repository HEAD ${(D.head_commit || "unknown").slice(0, 7)} · ` +
+    "rebuild with: python scripts/dashboard.py · Dashboard code is AI-generated (Claude Code, Opus 5.5); it displays the run records and does not interpret them.";
+}
+
+function renderAll() {
+  renderAlerts(); renderKpis(); renderControls(); renderLegend();
+  renderGrid(); renderDetail(); renderCharts(); renderSummary(); renderRuns(); renderFooter();
+}
+
+let resizeTimer;
+addEventListener("resize", () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(renderCharts, 150); });
+renderAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# Test-only tools (not needed for training runs)
+-r requirements.txt
+pytest==8.4.2
+networkx==3.6.1

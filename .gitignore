@@ -13,3 +13,12 @@ data/processed/*
 !data/processed/.gitkeep
 checkpoints/*
 !checkpoints/.gitkeep
+results/dashboard.html
+
+
+.env
+/.env
+
+# Sandbox scratch outputs
+sandbox/**/outputs/*
+!sandbox/**/outputs/.gitkeep

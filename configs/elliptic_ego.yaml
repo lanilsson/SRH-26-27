@@ -16,4 +16,4 @@ training:
   lr: 0.01
   weight_decay: 0.0005
   epochs: 200
-  patience: 30
+  patience: 50

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elliptic Graph Viewer</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --surface-2: #f1f0ec;
+    --border: #d9d8d2;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --illicit: #eb6834;
+    --licit: #2a78d6;
+    --unknown: #8a8983;
+    --edge: rgba(11,11,11,0.18);
+    --edge-hi: rgba(11,11,11,0.75);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --surface-2: #242423; --border: #3a3a38;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --illicit: #d95926; --licit: #3987e5; --unknown: #8f8e88;
+      --edge: rgba(255,255,255,0.16); --edge-hi: rgba(255,255,255,0.8);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --surface-2: #242423; --border: #3a3a38;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7;
+    --illicit: #d95926; --licit: #3987e5; --unknown: #8f8e88;
+    --edge: rgba(255,255,255,0.16); --edge-hi: rgba(255,255,255,0.8);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--surface-1); color: var(--text-primary);
+    font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center;
+    padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface-2); }
+  header h1 { font-size: 15px; font-weight: 600; margin: 0 8px 0 0; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; }
+  .legend label { display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-secondary); }
+  .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .swatch.illicit { background: var(--illicit); } .swatch.licit { background: var(--licit); }
+  .swatch.unknown { background: var(--unknown); }
+  input[type=text] { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface-1); color: var(--text-primary); width: 150px; }
+  button { padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface-1); color: var(--text-primary); cursor: pointer; }
+  .hint { color: var(--text-secondary); font-size: 12px; margin-left: auto; }
+  main { flex: 1; position: relative; min-height: 0; }
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+  #tip { position: absolute; pointer-events: none; display: none; padding: 8px 10px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px;
+    font-size: 12px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+  #tip b { display: block; margin-bottom: 3px; }
+  #tip .cls { text-transform: capitalize; }
+  #status { position: absolute; left: 12px; bottom: 10px; font-size: 12px; color: var(--text-secondary);
+    background: var(--surface-2); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); }
+  @media (max-width: 600px) { header { padding: 8px 16px; } .hint { display: none; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Elliptic tiny graph</h1>
+  <div class="legend" id="legend"></div>
+  <input type="text" id="search" placeholder="find txId…">
+  <button id="reset">Reset view</button>
+  <span class="hint">scroll to zoom · drag to pan · hover a node · click to highlight its neighbours</span>
+</header>
+<main>
+  <canvas id="c"></canvas>
+  <div id="tip"></div>
+  <div id="status"></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+const GRAPH = /*__GRAPH_JSON__*/;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const tip = document.getElementById('tip');
+const status = document.getElementById('status');
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+const nodes = GRAPH.nodes;
+const links = GRAPH.links.map(l => ({ source: l.s, target: l.t }));
+const byId = new Map(nodes.map(n => [n.id, n]));
+const byTx = new Map(nodes.map(n => [n.tx, n]));
+const neighbours = new Map(nodes.map(n => [n.id, new Set()]));
+for (const l of links) { neighbours.get(l.source).add(l.target); neighbours.get(l.target).add(l.source); }
+for (const n of nodes) n.r = n.cls === 'illicit' ? 5 : 2.5 + Math.sqrt(n.in + n.out) * 0.8;
+
+// ---- legend with counts + visibility toggles
+const visible = { illicit: true, licit: true, unknown: true };
+const legend = document.getElementById('legend');
+for (const cls of ['illicit', 'licit', 'unknown']) {
+  const n = nodes.filter(d => d.cls === cls).length;
+  const lab = document.createElement('label');
+  lab.innerHTML = `<input type="checkbox" checked> <span class="swatch ${cls}"></span> ${cls} (${n})`;
+  lab.querySelector('input').addEventListener('change', e => { visible[cls] = e.target.checked; draw(); });
+  legend.appendChild(lab);
+}
+
+// ---- layout
+let width, height, transform = d3.zoomIdentity;
+const zoom = d3.zoom().scaleExtent([0.05, 20]).on('zoom', e => { transform = e.transform; draw(); });
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  width = canvas.clientWidth; height = canvas.clientHeight;
+  canvas.width = width * dpr; canvas.height = height * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (transform === d3.zoomIdentity) {   // first paint: centre the origin of the layout
+    transform = d3.zoomIdentity.translate(width / 2, height / 2).scale(0.6);
+    d3.select(canvas).call(zoom.transform, transform);
+  }
+  draw();
+}
+window.addEventListener('resize', resize);
+
+const sim = d3.forceSimulation(nodes)
+  .force('link', d3.forceLink(links).id(d => d.id).distance(18).strength(0.6))
+  .force('charge', d3.forceManyBody().strength(-18).theta(0.9))
+  .force('collide', d3.forceCollide(d => d.r + 1).iterations(1))
+  .force('x', d3.forceX().strength(0.03))
+  .force('y', d3.forceY().strength(0.03))
+  .on('tick', () => { draw(); status.textContent = `layout ${Math.round((1 - sim.alpha()) * 100)}%`; })
+  .on('end', () => { status.textContent = `${nodes.length} nodes · ${links.length} edges · layout settled`; fit(); });
+
+// ---- interaction
+let hovered = null, selected = null;
+d3.select(canvas).call(zoom);
+
+function nodeAt(px, py) {
+  const [x, y] = transform.invert([px, py]);
+  const n = sim.find(x, y, 12 / transform.k);
+  return n && visible[n.cls] ? n : null;
+}
+canvas.addEventListener('mousemove', e => {
+  const n = nodeAt(e.offsetX, e.offsetY);
+  if (n !== hovered) { hovered = n; draw(); }
+  if (n) {
+    tip.style.display = 'block';
+    tip.innerHTML = `<b>tx ${n.tx}</b><span class="cls">${n.cls}</span> · step ${n.step}<br>` +
+      `node index ${n.idx}<br>in ${n.in} · out ${n.out} · neighbours ${neighbours.get(n.id).size}`;
+    tip.style.left = (e.offsetX + 14) + 'px'; tip.style.top = (e.offsetY + 14) + 'px';
+  } else tip.style.display = 'none';
+});
+canvas.addEventListener('mouseleave', () => { hovered = null; tip.style.display = 'none'; draw(); });
+canvas.addEventListener('click', e => { selected = nodeAt(e.offsetX, e.offsetY); draw(); });
+
+document.getElementById('search').addEventListener('change', e => {
+  const n = byTx.get(Number(e.target.value.trim()));
+  if (!n) { e.target.style.borderColor = css('--illicit'); return; }
+  e.target.style.borderColor = '';
+  selected = n; focus(n);
+});
+document.getElementById('reset').addEventListener('click', () => { selected = null; fit(); });
+
+function fit() {
+  const xs = d3.extent(nodes, d => d.x), ys = d3.extent(nodes, d => d.y);
+  const k = 0.92 * Math.min(width / (xs[1] - xs[0] + 40), height / (ys[1] - ys[0] + 40));
+  const t = d3.zoomIdentity.translate(width / 2, height / 2).scale(k)
+    .translate(-(xs[0] + xs[1]) / 2, -(ys[0] + ys[1]) / 2);
+  d3.select(canvas).transition().duration(500).call(zoom.transform, t);
+}
+function focus(n) {
+  const t = d3.zoomIdentity.translate(width / 2, height / 2).scale(4).translate(-n.x, -n.y);
+  d3.select(canvas).transition().duration(600).call(zoom.transform, t);
+}
+
+// ---- drawing
+function draw() {
+  if (!width) return;
+  ctx.save();
+  ctx.clearRect(0, 0, width, height);
+  ctx.translate(transform.x, transform.y); ctx.scale(transform.k, transform.k);
+  const k = transform.k;
+  const focusNode = selected || hovered;
+  const hi = focusNode ? neighbours.get(focusNode.id) : null;
+  const color = { illicit: css('--illicit'), licit: css('--licit'), unknown: css('--unknown') };
+
+  // edges: draw dim ones first, highlighted ones on top, arrowheads when zoomed in
+  ctx.lineWidth = 1 / k;
+  for (const pass of [0, 1]) {
+    ctx.strokeStyle = pass ? css('--edge-hi') : css('--edge');
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    for (const l of links) {
+      const s = l.source, t = l.target;
+      if (!visible[s.cls] || !visible[t.cls]) continue;
+      const isHi = focusNode && (s === focusNode || t === focusNode);
+      if ((pass === 1) !== !!isHi) continue;
+      ctx.moveTo(s.x, s.y); ctx.lineTo(t.x, t.y);
+    }
+    ctx.stroke();
+    if (k >= 2.5) {
+      for (const l of links) {
+        const s = l.source, t = l.target;
+        if (!visible[s.cls] || !visible[t.cls]) continue;
+        const isHi = focusNode && (s === focusNode || t === focusNode);
+        if ((pass === 1) !== !!isHi) continue;
+        const dx = t.x - s.x, dy = t.y - s.y, len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len, ax = t.x - ux * t.r, ay = t.y - uy * t.r, a = 4 / k;
+        ctx.beginPath(); ctx.moveTo(ax, ay);
+        ctx.lineTo(ax - ux * a - uy * a * 0.5, ay - uy * a + ux * a * 0.5);
+        ctx.lineTo(ax - ux * a + uy * a * 0.5, ay - uy * a - ux * a * 0.5);
+        ctx.closePath(); ctx.fill();
+      }
+    }
+  }
+
+  // nodes
+  for (const n of nodes) {
+    if (!visible[n.cls]) continue;
+    const dim = focusNode && n !== focusNode && !hi.has(n.id);
+    ctx.globalAlpha = dim ? 0.18 : 1;
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 2 * Math.PI);
+    ctx.fillStyle = color[n.cls]; ctx.fill();
+    if (n.cls === 'illicit' || n === focusNode) {
+      ctx.lineWidth = (n === focusNode ? 2.5 : 1.5) / k;
+      ctx.strokeStyle = css('--text-primary'); ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
+  // labels once zoomed in far enough to read them
+  if (k >= 4) {
+    ctx.font = `${11 / k}px sans-serif`; ctx.fillStyle = css('--text-secondary');
+    ctx.textAlign = 'center';
+    for (const n of nodes) if (visible[n.cls]) ctx.fillText(n.tx, n.x, n.y - n.r - 3 / k);
+  }
+  ctx.restore();
+}
+resize();
+</script>
+</body>
+</html>
