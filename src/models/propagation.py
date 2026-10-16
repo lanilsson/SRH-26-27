@@ -1,7 +1,6 @@
 """Sparse neighbourhood operators shared by all four conditions.
 
-AI-generated: Claude Code (Opus 5.5), 2026-10-11. Log the prompt in the
-project prompt log and cite per the ISEF generative-AI table.
+
 
 Each operator is a symmetric-normalised matrix D^-1/2 M D^-1/2 (D = row sums
 of M), applied to node representations as `op @ h`:

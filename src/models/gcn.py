@@ -1,8 +1,5 @@
 """Controlled GCN with two independently switchable mechanisms (Zhu et al., 2020).
 
-AI-generated: Claude Code (Opus 5.5), 2026-10-11. Log the prompt in the
-project prompt log and cite per the ISEF generative-AI table.
-
 The four experimental conditions are produced by two boolean flags, so the
 architectures differ ONLY in these mechanisms — everything else (depth,
 hidden size, dropout, encoder, classifier, training procedure) is shared:

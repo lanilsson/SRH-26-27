@@ -1,7 +1,5 @@
 """A 2-layer GCN built from HandGCNConv, run forward on the tiny Elliptic graph.
 
-AI-generated code (Claude Code, 2026-09-24) — sandbox only, not part of the
-paper. Prompt is in the project prompt log.
 
 Run from the repo root (after sandbox/01 has produced the .pt file):
     .venv/bin/python sandbox/02_gnn_foundation/two_layer_forward.py

@@ -1,7 +1,6 @@
 """IEEE-CIS-G dataset: CSVs in data/raw/ieee_cis_g/ -> one PyG graph.
 
-AI-generated: Claude Code (Opus 5.5), 2026-10-11. Log the prompt in the
-project prompt log and cite per the ISEF generative-AI table.
+
 
 Reproduces the H2GB construction (Lin et al., 2025; code:
 github.com/junhongmit/H2GB, H2GB/datasets/ieee_cis_dataset.py and

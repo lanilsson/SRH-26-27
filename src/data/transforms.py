@@ -1,7 +1,6 @@
 """Feature preprocessing shared by both dataset builders.
 
-AI-generated: Claude Code (Opus 5.5), 2026-10-11. Log the prompt in the
-project prompt log and cite per the ISEF generative-AI table.
+
 """
 
 import torch

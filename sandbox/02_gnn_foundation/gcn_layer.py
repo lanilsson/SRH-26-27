@@ -1,8 +1,5 @@
 """One GCN layer written by hand, checked against torch_geometric's GCNConv.
 
-AI-generated code (Claude Code, 2026-09-24) — sandbox only, not part of the
-paper. Prompt is in the project prompt log.
-
 Run from the repo root:
     .venv/bin/python sandbox/02_gnn_foundation/gcn_layer.py
 

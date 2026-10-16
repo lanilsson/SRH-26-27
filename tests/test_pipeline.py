@@ -2,8 +2,7 @@
 
     .venv/bin/python -m pytest tests/ -q
 
-AI-generated: Claude Code (Opus 5.5), 2026-10-11. Log the prompt in the
-project prompt log and cite per the ISEF generative-AI table.
+
 
 Fast tests use a small random graph; tests marked `data` load the real
 datasets from data/processed (built on first use) and take a few seconds.

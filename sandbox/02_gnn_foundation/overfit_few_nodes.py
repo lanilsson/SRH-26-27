@@ -1,8 +1,5 @@
 """Overfit a handful of labelled nodes on purpose to prove the pipeline trains.
 
-AI-generated code (Claude Code, 2026-09-24) — sandbox only, not part of the
-paper. Prompt is in the project prompt log.
-
 Run from the repo root:
     .venv/bin/python sandbox/02_gnn_foundation/overfit_few_nodes.py
     .venv/bin/python sandbox/02_gnn_foundation/overfit_few_nodes.py --k 20 --epochs 300

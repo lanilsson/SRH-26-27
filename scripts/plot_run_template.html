@@ -1,0 +1,264 @@
+<!doctype html>
+<!-- Report template for scripts/plot_run.py.
+     AI-generated: Claude Code (Opus 5.5), 2026-10-12. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__TITLE__</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f4f3f0; --surface-1: #fcfcfb; --border: #e3e2dd; --grid: #e9e8e3;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #7b7a75;
+    --series-1: #2a78d6; --series-2: #eb6834;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --page: #111110; --surface-1: #1a1a19; --border: #33332f; --grid: #2a2a27;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8e85;
+      --series-1: #3987e5; --series-2: #d95926;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--text-primary);
+         font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 0 0 2px; }
+  .sub { color: var(--text-secondary); margin: 0 0 20px; }
+  .note { color: var(--text-secondary); font-size: 13px; margin: 0 0 8px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); margin-bottom: 16px; }
+  .tiles { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; position: relative; }
+  .tile .label { color: var(--text-secondary); font-size: 13px; }
+  .tile .value { font-size: 34px; font-weight: 600; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
+  .tile .aside { color: var(--text-secondary); font-size: 13px; font-variant-numeric: tabular-nums; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  svg text { fill: var(--text-secondary); font-size: 11px; }
+  svg .axis-title { fill: var(--text-secondary); font-size: 11.5px; }
+  svg .gridline { stroke: var(--grid); stroke-width: 1; }
+  svg .ref { stroke: var(--text-muted); stroke-width: 1; stroke-dasharray: 3 4; }
+  svg .ref-label { fill: var(--text-muted); }
+  svg .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  svg .s1 { stroke: var(--series-1); } svg .s2 { stroke: var(--series-2); }
+  svg .dot { stroke: var(--surface-1); stroke-width: 2; }
+  svg .dot.s1, svg .bar { fill: var(--series-1); } svg .dot.s2 { fill: var(--series-2); }
+  svg .bar.dim { opacity: 0.45; }
+  svg .cross { stroke: var(--text-muted); stroke-width: 1; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; color: var(--text-secondary); font-size: 12.5px; margin: 6px 0 2px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend svg { width: 26px; height: 8px; }
+  .tip { position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+         border-radius: 6px; padding: 6px 9px; font-size: 12.5px; box-shadow: 0 2px 10px rgba(0,0,0,.14);
+         white-space: nowrap; display: none; z-index: 2; font-variant-numeric: tabular-nums; }
+  .tip b { font-weight: 600; } .tip .k { color: var(--text-secondary); }
+  .tip i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 5px 10px; border-bottom: 1px solid var(--border); }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--text-secondary); font-weight: 500; }
+  .scroll { overflow-x: auto; }
+  details summary { cursor: pointer; color: var(--text-secondary); margin-top: 10px; }
+  footer { color: var(--text-muted); font-size: 12px; margin-top: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1 id="title"></h1>
+  <p class="sub" id="sub"></p>
+  <div class="grid tiles" id="tiles"></div>
+  <div class="grid">
+    <div class="card"><h2>Training loss</h2><p class="note">Class-weighted loss on training nodes, per epoch</p><div id="loss"></div></div>
+    <div class="card"><h2>Validation PR-AUC</h2><p class="note" id="valnote"></p><div id="valpr"></div></div>
+  </div>
+  <div class="grid">
+    <div class="card"><h2>Precision–recall curve</h2><p class="note">Fraud class; dotted lines show each split's fraud rate (a random classifier)</p><div id="pr"></div></div>
+    <div class="card"><h2>ROC curve</h2><p class="note">Dotted diagonal is a random classifier</p><div id="roc"></div></div>
+  </div>
+  <div class="card" id="stepcard" hidden>
+    <h2>Fraud-class F1 by test time step</h2>
+    <p class="note" id="stepnote"></p>
+    <div id="steps"></div>
+    <details><summary>Table view</summary><div class="scroll" id="steptable"></div></details>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>Run details</h2>
+    <div class="scroll" id="details"></div>
+  </div>
+  <footer>Figures generated by scripts/plot_run.py (AI-generated code, Claude Code). Mark as AI-generated and cite if used in the paper or poster.</footer>
+</main>
+<script id="payload" type="application/json">__PAYLOAD__</script>
+<script>
+const P = JSON.parse(document.getElementById('payload').textContent);
+const R = P.record, NS = 'http://www.w3.org/2000/svg';
+const f3 = v => v.toFixed(3), f4 = v => v.toFixed(4);
+const el = (tag, attrs = {}, parent) => {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+};
+const html = (tag, cls, inner, parent) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (inner != null) n.innerHTML = inner;
+  if (parent) parent.appendChild(n);
+  return n;
+};
+const ticks = (lo, hi, n = 5) => Array.from({length: n + 1}, (_, i) => lo + (hi - lo) * i / n);
+const H = 300, M = {l: 46, r: 14, t: 10, b: 38};
+
+function frame(host, x, y, W = 520) {
+  host.style.position = 'relative';
+  const svg = el('svg', {viewBox: `0 0 ${W} ${H}`, role: 'img'}, host);
+  const sx = v => M.l + (v - x.domain[0]) / (x.domain[1] - x.domain[0]) * (W - M.l - M.r);
+  const sy = v => H - M.b - (v - y.domain[0]) / (y.domain[1] - y.domain[0]) * (H - M.t - M.b);
+  for (const t of ticks(...y.domain)) {
+    el('line', {class: 'gridline', x1: M.l, x2: W - M.r, y1: sy(t), y2: sy(t)}, svg);
+    el('text', {x: M.l - 7, y: sy(t) + 4, 'text-anchor': 'end'}, svg).textContent = y.fmt(t);
+  }
+  for (const t of (x.ticks || ticks(...x.domain)))
+    el('text', {x: sx(t), y: H - M.b + 16, 'text-anchor': 'middle'}, svg).textContent = x.fmt(t);
+  el('text', {class: 'axis-title', x: (M.l + W - M.r) / 2, y: H - 4, 'text-anchor': 'middle'}, svg).textContent = x.label;
+  el('text', {class: 'axis-title', x: 12, y: (M.t + H - M.b) / 2, 'text-anchor': 'middle',
+              transform: `rotate(-90 12 ${(M.t + H - M.b) / 2})`}, svg).textContent = y.label;
+  return {svg, sx, sy, W, tip: html('div', 'tip', null, host)};
+}
+
+function placeTip(tip, host, evt) {
+  tip.style.display = 'block';
+  const box = host.getBoundingClientRect();
+  let left = evt.clientX - box.left + 14;
+  if (left + tip.offsetWidth > box.width) left = evt.clientX - box.left - tip.offsetWidth - 14;
+  tip.style.left = Math.max(0, left) + 'px';
+  tip.style.top = Math.max(0, evt.clientY - box.top - tip.offsetHeight - 10) + 'px';
+}
+
+function lineChart(id, cfg) {
+  const host = document.getElementById(id);
+  const {svg, sx, sy, W, tip} = frame(host, cfg.x, cfg.y);
+  for (const r of cfg.refs || []) {
+    el('line', {class: 'ref', x1: sx(r.x1), y1: sy(r.y1), x2: sx(r.x2), y2: sy(r.y2)}, svg);
+    if (r.label) el('text', {class: 'ref-label', x: sx(r.lx) + (r.dx || 0), y: sy(r.ly) - 5, 'text-anchor': r.anchor || 'start'}, svg).textContent = r.label;
+  }
+  for (const s of cfg.series)
+    el('path', {class: `line ${s.cls}`, 'stroke-dasharray': s.dash || '',
+                d: s.pts.map((p, i) => (i ? 'L' : 'M') + sx(p[0]).toFixed(1) + ' ' + sy(p[1]).toFixed(1)).join('')}, svg);
+  if (cfg.series.length > 1) {
+    const lg = html('div', 'legend', null, host);
+    for (const s of cfg.series)
+      html('span', null, `<svg viewBox="0 0 26 8"><line class="line ${s.cls}" x1="1" x2="25" y1="4" y2="4" stroke-dasharray="${s.dash || ''}"/></svg>${s.name}`, lg);
+  }
+  const cross = el('line', {class: 'cross', y1: M.t, y2: H - M.b, visibility: 'hidden'}, svg);
+  const dots = cfg.series.map(s => el('circle', {class: `dot ${s.cls}`, r: 4.5, visibility: 'hidden'}, svg));
+  const hit = el('rect', {x: M.l, y: M.t, width: W - M.l - M.r, height: H - M.t - M.b, fill: 'transparent'}, svg);
+  const hide = () => { tip.style.display = 'none'; cross.setAttribute('visibility', 'hidden'); dots.forEach(d => d.setAttribute('visibility', 'hidden')); };
+  hit.addEventListener('mouseleave', hide);
+  hit.addEventListener('mousemove', evt => {
+    const box = svg.getBoundingClientRect();
+    const px = (evt.clientX - box.left) / box.width * W;
+    const xv = cfg.x.domain[0] + (px - M.l) / (W - M.l - M.r) * (cfg.x.domain[1] - cfg.x.domain[0]);
+    let rows = '', cx = px;
+    cfg.series.forEach((s, i) => {
+      let best = s.pts[0];
+      for (const p of s.pts) if (Math.abs(p[0] - xv) < Math.abs(best[0] - xv)) best = p;
+      dots[i].setAttribute('cx', sx(best[0])); dots[i].setAttribute('cy', sy(best[1])); dots[i].setAttribute('visibility', 'visible');
+      if (i === 0) cx = sx(best[0]);
+      rows += `<div><i style="background:var(--series-${s.cls.slice(1)})"></i><span class="k">${s.name}</span> &nbsp;<b>${cfg.y.tipFmt(best[1])}</b>` +
+              (cfg.series.length > 1 ? ` <span class="k">at ${cfg.x.tipFmt(best[0])}</span>` : '') + `</div>`;
+    });
+    cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('visibility', 'visible');
+    tip.innerHTML = (cfg.series.length > 1 ? '' : `<div class="k">${cfg.x.label} ${cfg.x.tipFmt(cfg.series[0].pts.reduce((b, p) => Math.abs(p[0] - xv) < Math.abs(b[0] - xv) ? p : b)[0])}</div>`) + rows;
+    placeTip(tip, host, evt);
+  });
+}
+
+function barChart(id, rows) {
+  const host = document.getElementById(id);
+  const x = {domain: [rows[0].step - 0.5, rows[rows.length - 1].step + 0.5], ticks: rows.map(r => r.step), fmt: v => v, label: 'Time step'};
+  const y = {domain: [0, 1], fmt: v => v.toFixed(1), label: 'Fraud-class F1'};
+  const {svg, sx, sy, tip} = frame(host, x, y, 1060);
+  const bw = (sx(1) - sx(0)) - 2;  // 2px surface gap between bars
+  rows.forEach(r => {
+    const top = sy(r.f1), h = Math.max(sy(0) - top, 0), rad = Math.min(4, h);
+    const left = sx(r.step) - bw / 2;
+    const d = `M${left} ${sy(0)}V${top + rad}Q${left} ${top} ${left + rad} ${top}H${left + bw - rad}Q${left + bw} ${top} ${left + bw} ${top + rad}V${sy(0)}Z`;
+    const bar = el('path', {class: 'bar', d}, svg);
+    el('text', {x: sx(r.step), y: top - 5, 'text-anchor': 'middle'}, svg).textContent = r.f1.toFixed(2);
+    const hit = el('rect', {x: left - 1, y: M.t, width: bw + 2, height: H - M.t - M.b, fill: 'transparent'}, svg);
+    hit.addEventListener('mousemove', evt => {
+      svg.querySelectorAll('.bar').forEach(b => b.classList.toggle('dim', b !== bar));
+      tip.innerHTML = `<div><b>Time step ${r.step}</b></div><div><span class="k">F1</span> <b>${f3(r.f1)}</b></div>` +
+        `<div><span class="k">Precision</span> ${f3(r.precision)} &nbsp;<span class="k">Recall</span> ${f3(r.recall)}</div>` +
+        `<div><span class="k">Fraud nodes</span> ${r.fraud} of ${r.labelled} labelled</div>`;
+      placeTip(tip, host, evt);
+    });
+    hit.addEventListener('mouseleave', () => { tip.style.display = 'none'; svg.querySelectorAll('.bar').forEach(b => b.classList.remove('dim')); });
+  });
+}
+
+// ---- header and tiles
+document.getElementById('title').textContent = R.run;
+document.getElementById('sub').textContent =
+  `${R.dataset} · ${R.condition} · seed ${R.seed} · ${R.epochs_run} epochs (best at ${R.best_epoch + 1}) · ` +
+  `${R.resources.total_seconds}s on ${R.resources.device} · ${new Date(R.timestamp).toLocaleString()}`;
+for (const [key, label] of [['pr_auc', 'Test PR-AUC'], ['f1', 'Test F1 (fraud class)'], ['roc_auc', 'Test ROC-AUC']]) {
+  const t = html('div', 'card tile', null, document.getElementById('tiles'));
+  html('div', 'label', label, t);
+  html('div', 'value', f3(R.metrics[key]), t);
+  html('div', 'aside', `Validation ${f3(R.val_metrics[key])}`, t);
+}
+
+// ---- training curves
+if (P.history) {
+  const n = P.history.train_loss.length, stepE = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500].find(v => n / v <= 6) || 1000;
+  const ep = {domain: [1, n], ticks: [1, ...Array.from({length: Math.floor(n / stepE)}, (_, i) => (i + 1) * stepE)], fmt: v => v, tipFmt: v => v, label: 'Epoch'};
+  const loss = P.history.train_loss.map((v, i) => [i + 1, v]);
+  const maxLoss = Math.ceil(Math.max(...P.history.train_loss) * 10) / 10;
+  lineChart('loss', {x: ep, y: {domain: [0, maxLoss], fmt: v => v.toFixed(2), tipFmt: f4, label: 'Loss'},
+                     series: [{name: 'Training loss', cls: 's1', pts: loss}]});
+  const best = R.best_epoch + 1;
+  document.getElementById('valnote').textContent =
+    `Checked each epoch; the model from epoch ${best} (highest value) is the one evaluated` +
+    (R.epochs_run === R.config.training.epochs ? `. Ran all ${R.epochs_run} epochs without early stopping.` : `. Stopped early at epoch ${R.epochs_run}.`);
+  lineChart('valpr', {x: ep, y: {domain: [0, 1], fmt: v => v.toFixed(1), tipFmt: f4, label: 'Validation PR-AUC'},
+                      refs: [{x1: best, x2: best, y1: 0, y2: 1, label: `best: epoch ${best}`, lx: best, ly: 0.04, anchor: best > n * 0.7 ? 'end' : 'start', dx: best > n * 0.7 ? -6 : 6}],
+                      series: [{name: 'Validation PR-AUC', cls: 's1', pts: P.history.val_pr_auc.map((v, i) => [i + 1, v])}]});
+} else {
+  document.getElementById('loss').textContent = document.getElementById('valpr').textContent = 'This run record has no per-epoch history.';
+}
+
+// ---- PR and ROC
+const unit = lab => ({domain: [0, 1], fmt: v => v.toFixed(1), tipFmt: f3, label: lab});
+const C = P.curves, two = kind => [{name: 'Test', cls: 's1', pts: C.test[kind]}, {name: 'Validation', cls: 's2', dash: '5 4', pts: C.val[kind]}];
+lineChart('pr', {x: {...unit('Recall'), tipFmt: v => 'recall ' + f3(v)}, y: unit('Precision'), series: two('pr'),
+                 refs: [{x1: 0, x2: 1, y1: C.test.fraud_rate, y2: C.test.fraud_rate, label: `test fraud rate ${(C.test.fraud_rate * 100).toFixed(1)}%`, lx: 0, ly: C.test.fraud_rate, dx: 6},
+                        {x1: 0, x2: 1, y1: C.val.fraud_rate, y2: C.val.fraud_rate, label: `validation fraud rate ${(C.val.fraud_rate * 100).toFixed(1)}%`, lx: 0, ly: C.val.fraud_rate, dx: 6}]});
+lineChart('roc', {x: {...unit('False positive rate'), tipFmt: v => 'FPR ' + f3(v)}, y: unit('True positive rate'), series: two('roc'),
+                  refs: [{x1: 0, y1: 0, x2: 1, y2: 1}]});
+
+// ---- per-time-step F1
+if (P.by_step) {
+  document.getElementById('stepcard').hidden = false;
+  document.getElementById('stepnote').textContent =
+    `Each bar is the F1 on one test time step, using the threshold ${f3(R.metrics.threshold)} chosen on validation. Hover for precision, recall and counts.`;
+  barChart('steps', P.by_step);
+  document.getElementById('steptable').innerHTML = '<table><tr><th>Time step</th><th>Labelled</th><th>Fraud</th><th>F1</th><th>Precision</th><th>Recall</th></tr>' +
+    P.by_step.map(r => `<tr><td>${r.step}</td><td>${r.labelled}</td><td>${r.fraud}</td><td>${f3(r.f1)}</td><td>${f3(r.precision)}</td><td>${f3(r.recall)}</td></tr>`).join('') + '</table>';
+}
+
+// ---- details table
+const m = R.config.model, t = R.config.training;
+const rows = [['Metric', 'Validation', 'Test'], ['PR-AUC', f4(R.val_metrics.pr_auc), f4(R.metrics.pr_auc)],
+              ['F1 (fraud class)', f4(R.val_metrics.f1), f4(R.metrics.f1)], ['ROC-AUC', f4(R.val_metrics.roc_auc), f4(R.metrics.roc_auc)]];
+document.getElementById('details').innerHTML =
+  '<table>' + rows.map((r, i) => '<tr>' + r.map(c => i ? `<td>${c}</td>` : `<th>${c}</th>`).join('') + '</tr>').join('') + '</table>' +
+  `<p class="note" style="margin-top:12px">Switches: ego separation ${m.ego_separation ? 'on' : 'off'}, second-order ${m.second_order ? 'on' : 'off'} · ` +
+  `hidden ${m.hidden_dim}, ${m.num_layers} layers, dropout ${m.dropout} · lr ${t.lr}, weight decay ${t.weight_decay}, ` +
+  `max ${t.epochs} epochs, patience ${t.patience} · ${R.num_params.toLocaleString()} parameters · ` +
+  `peak memory ${R.resources.peak_memory_mb} MB · code version ${String(R.git_commit).slice(0, 7)}${R.git_dirty ? ' (with uncommitted changes)' : ''}</p>`;
+</script>
+</body>
+</html>

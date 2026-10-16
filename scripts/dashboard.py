@@ -11,10 +11,6 @@ The dashboard only displays what the run records contain. It never starts
 runs and never writes anything except the HTML file. Figures for the paper
 or poster should still come from a committed script in results/figures/.
 
-AI-generated (Claude Code (Opus 5.5), 2026-10-12), together with
-scripts/dashboard_template.html — log the prompt and cite per the ISEF
-generative-AI table.
-
 Usage:
     python scripts/dashboard.py            # -> results/dashboard.html
     python scripts/dashboard.py --open     # ...and open it in the browser

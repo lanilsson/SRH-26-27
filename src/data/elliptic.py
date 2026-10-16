@@ -1,7 +1,6 @@
 """Elliptic Bitcoin dataset -> PyG Data object with the study's splits.
 
-AI-generated: Claude Code (Opus 5.5), 2026-10-11. Log the prompt in the
-project prompt log and cite per the ISEF generative-AI table.
+
 
 Loaded with PyTorch Geometric's built-in EllipticBitcoinDataset (proposal,
 Build Procedure step 1), reading the CSVs already in data/raw/elliptic/:

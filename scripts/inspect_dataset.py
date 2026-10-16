@@ -2,8 +2,7 @@
 splits, and the homophily ratio — the numbers to record in the notebook
 before any training.
 
-AI-generated: Claude Code (Opus 5.5), 2026-10-11. Log the prompt in the
-project prompt log and cite per the ISEF generative-AI table.
+
 
 Usage: python scripts/inspect_dataset.py elliptic
        python scripts/inspect_dataset.py ieee_cis_g

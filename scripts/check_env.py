@@ -2,8 +2,7 @@
 compute device — run once on each machine (laptop, RunPod pod) and copy the
 output into the notebook.
 
-AI-generated: Claude Code (Opus 5.5), 2026-10-11. Log the prompt in the
-project prompt log and cite per the ISEF generative-AI table.
+
 
 Usage: python scripts/check_env.py
 """

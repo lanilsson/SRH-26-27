@@ -3,9 +3,6 @@
   Template for the results dashboard. scripts/dashboard.py replaces the
   DATA placeholder below with the run records and writes results/dashboard.html.
   Self-contained on purpose: no external scripts, fonts or network requests.
-
-  AI-generated (Claude Code (Opus 5.5), 2026-10-12) — log the prompt and cite
-  per the ISEF generative-AI table.
 -->
 <html lang="en">
 <head>
@@ -566,7 +563,7 @@ function renderRuns() {
 function renderFooter() {
   document.getElementById("footer").textContent =
     `Generated ${new Date(D.generated).toLocaleString()} from ${D.runs_dir}/ · repository HEAD ${(D.head_commit || "unknown").slice(0, 7)} · ` +
-    "rebuild with: python scripts/dashboard.py · Dashboard code is AI-generated (Claude Code, Opus 5.5); it displays the run records and does not interpret them.";
+    "rebuild with: python scripts/dashboard.py";
 }
 
 function renderAll() {

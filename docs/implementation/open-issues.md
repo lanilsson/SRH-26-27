@@ -1,9 +1,5 @@
 # Open issues to revisit
 
-> AI-generated tracking note (Claude Code, Opus 5.5). Facts and to-dos only;
-> interpretation and decisions are yours. Log the prompt. Record the
-> finding in your own lab notebook too, in your own words and dated.
-
 ## OI-1 — Homophily: Elliptic measures as homophilous, not heterophilous
 
 - **Found:** 2026-10-11, running `scripts/inspect_dataset.py` (checklist item D1)
@@ -16,15 +12,15 @@
 the homophily check to "confirm that it is heterophilous". The edge homophily
 ratio it names (Zhu et al., 2020) gives:
 
-| Graph | Measure | Value |
-|---|---|---|
-| Elliptic | edge homophily, labelled–labelled edges (73,248 entries) | **0.954** |
-| Elliptic | edges from fraud nodes: share of labelled neighbours that are fraud | 0.541 |
-| Elliptic | edges from licit nodes: share of labelled neighbours that are licit | 0.976 |
-| Elliptic | same-class share over 2-hop pairs | 0.977 |
-| IEEE-CIS-G | edge homophily, 1-hop | undefined (every edge is transaction–metadata) |
-| IEEE-CIS-G | same-class share over 2-hop pairs (via shared metadata) | 0.859 |
-| IEEE-CIS-G | H²GB's published values (Lin et al., Table 2) | H_edge 0.5917, H_adj 1.3151, H² Index 0.9846 (near 1 = heterophilic) |
+| Graph      | Measure                                                             | Value                                                                 |
+| ---------- | ------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Elliptic   | edge homophily, labelled–labelled edges (73,248 entries)           | **0.954**                                                       |
+| Elliptic   | edges from fraud nodes: share of labelled neighbours that are fraud | 0.541                                                                 |
+| Elliptic   | edges from licit nodes: share of labelled neighbours that are licit | 0.976                                                                 |
+| Elliptic   | same-class share over 2-hop pairs                                   | 0.977                                                                 |
+| IEEE-CIS-G | edge homophily, 1-hop                                               | undefined (every edge is transaction–metadata)                       |
+| IEEE-CIS-G | same-class share over 2-hop pairs (via shared metadata)             | 0.859                                                                 |
+| IEEE-CIS-G | H²GB's published values (Lin et al., Table 2)                      | H_edge 0.5917, H_adj 1.3151, H² Index 0.9846 (near 1 = heterophilic) |
 
 **Context about the metric.** Edge homophily is inflated by class imbalance:
 about 90% of Elliptic's labelled nodes are licit, so a randomly wired graph

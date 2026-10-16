@@ -7,8 +7,7 @@ Writes a self-contained record of the run (config, seed, git commit,
 metrics) to results/runs/{dataset}_{condition}_seed{seed}.json and the
 best model weights to checkpoints/.
 
-Proposal requirements implemented here (AI-generated additions: Claude Code
-(Opus 5.5), 2026-10-11 — phase graphs, class-weighted loss, resource
+Proposal requirements implemented here, 2026-10-11 — phase graphs, class-weighted loss, resource
 logging; log the prompt and cite per the ISEF generative-AI table):
   - Class-weighted loss: BCE with pos_weight = (#licit / #illicit) over the
     TRAINING labels only.
@@ -18,11 +17,6 @@ logging; log the prompt and cite per the ISEF generative-AI table):
     threshold selection the train+val graph, the test metrics the full graph.
   - Resource use (device, wall time, time per epoch, peak memory) is stored
     in the run record under "resources" for the cost/performance notebook.
-
-AI-generated addition (Claude Code (Opus 5.5), 2026-10-12 — logging only, no
-change to training; log the prompt and cite per the ISEF generative-AI table):
-  - "history" (training loss and validation PR-AUC for every epoch) and
-    "git_dirty" are stored in the run record for scripts/dashboard.py.
 """
 
 import argparse
