@@ -3,7 +3,7 @@
 ## OI-1 — Homophily: Elliptic measures as homophilous, not heterophilous
 
 - **Found:** 2026-10-11, running `scripts/inspect_dataset.py` (checklist item D1)
-- **Status:** deferred, does not block the code, pilot runs, or this week's tasks
+- **Status:** measure chosen 2026-10-20 (pending Lucas reading Platonov et al., 2023 and Lim et al., 2021): report adjusted homophily (Platonov, 2023; H²GB's H_adj) as the main measure, with edge homophily (Zhu et al., 2020) alongside. Step 2 to be reworded to "measure and report". Code for adjusted + H²GB metapath measures not written yet.
 - **Decide by:** before the 40 final runs on RunPod (settle together with D4
   tuning and D5 statistical test); at the latest, before writing the methods
   section
