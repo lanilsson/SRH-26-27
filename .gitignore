@@ -22,3 +22,6 @@ results/dashboard.html
 # Sandbox scratch outputs
 sandbox/**/outputs/*
 !sandbox/**/outputs/.gitkeep
+
+# Personal weekly plan (not part of the project)
+planning/
